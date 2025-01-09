@@ -1,0 +1,27 @@
+{% extends 'base.html.twig' %}
+
+{% block body %}
+    <h1>Sortu Bilera</h1>
+
+    {% for message in app.flashes('success') %}
+        <div class="alert alert-success">
+            {{ message }}
+        </div>
+    {% endfor %}
+
+    {{ form(form) }}
+{#    {{ form_start(form) }}#}
+{#        {{ form_row(form.izena) }}#}
+{#        {{ form_row(form.lekua) }}#}
+{#        {{ form_row(form.data) }}#}
+{#        {{ form_row(form.sortu) }}#}
+{#    {{ form_end(form) }}#}
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            flatpickr('.js-datepicker', {
+                dateFormat: 'Y-m-d',
+            });
+        });
+    </script>
+{% endblock %}

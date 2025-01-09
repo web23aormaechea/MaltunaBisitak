@@ -1,0 +1,46 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Kudeaketa{% endblock %}
+
+{% block body %}
+<style>
+
+</style>
+
+<div class="d-flex flex-column justify-content-around flex-grow-1 h-100">
+    <div class="w-100 d-flex justify-content-around gallery">
+        <div class="gallery-item">
+            <a href="{{ path('app_admin_bilera')}}">
+                <img src="{{ asset('img/ofizina.jpg') }}">
+                <div class="gallery-text">Sortu Bilera</div>
+            </a>
+        </div>
+        <div class="gallery-item">
+            <a>
+                <img src="{{ asset('img/exportatu.jpg') }}">
+                <div class="gallery-text">Datuak Exportatu</div>
+            </a>
+        </div>
+        <div class="gallery-item">
+            <a>
+                <img src="{{ asset('img/calendario.jpg') }}">
+                <div class="gallery-text">Bisita Egunak Konfiguratu</div>
+            </a>
+        </div>
+    </div>
+    <div class="w-100 d-flex justify-content-around gallery">
+        <div class="gallery-item">
+            <a>
+                <img src="{{ asset('img/trabajadores.jpg') }}">
+                <div class="gallery-text">Langileen Kudeaketa</div>
+            </a>
+        </div>
+        <div class="gallery-item">
+            <a>
+                <img src="{{ asset('img/visitas.jpg') }}">
+                <div class="gallery-text">Bisitak Itxi</div>
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

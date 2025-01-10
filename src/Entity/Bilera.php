@@ -20,6 +20,7 @@ class Bilera
     #[ORM\Column(length: 255)]
     private ?string $Lekua = null;
 
+
     #[ORM\Column(type: 'date')]
     private ?\DateTimeInterface $Data = null;
 

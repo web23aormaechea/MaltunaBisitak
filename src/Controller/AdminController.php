@@ -53,9 +53,32 @@ class AdminController extends AbstractController
             return $this->redirectToRoute('app_admin_bilera');
         }
 
+        $hoy = new \DateTime('today');
+        $bilerak = $this->em->getRepository(Bilera::class)->createQueryBuilder('b')
+            ->where('b.Data >= :hoy')
+            ->setParameter('hoy', $hoy)
+            ->orderBy('b.Data', 'ASC')
+            ->getQuery()
+            ->getResult();
+
         // Renderizar el formulario
         return $this->render('admin/bilera.html.twig', [
             'form' => $form->createView(),
+            'bilerak' => $bilerak,
         ]);
     }
+
+    #[Route('/Bilera/delete/{id}', name: 'app_admin_bilera_delete', methods: ['POST'])]
+    public function delete(Request $request, Bilera $bilera, EntityManagerInterface $em): Response
+    {
+        if ($this->isCsrfTokenValid('delete' . $bilera->getId(), $request->request->get('_token'))) {
+            $em->remove($bilera);
+            $em->flush();
+
+            $this->addFlash('success', 'Bilera eliminada correctamente.');
+        }
+
+        return $this->redirectToRoute('app_admin_bilera');
+    }
+
 }

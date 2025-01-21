@@ -1,0 +1,34 @@
+{% extends 'basePedestal.html.twig' %}
+
+{% block title %}Kudeaketa{% endblock %}
+
+{% block body %}
+    <style>
+
+    </style>
+
+    <div class="d-flex flex-column justify-content-around flex-grow-1 h-100">
+        <div class="w-100 d-flex justify-content-around gallery">
+            <div class="gallery-item">
+                <a href="{{ path('app_pedestal_bilera')}}">
+                    <img src="{{ asset('img/ofizina.jpg') }}">
+                    <div class="gallery-text">Bilera</div>
+                </a>
+            </div>
+            <div class="gallery-item">
+                <a href="{{ path('app_pedestal_bisita')}}">
+                    <img src="{{ asset('img/trabajadores.jpg') }}">
+                    <div class="gallery-text">Bisita</div>
+                </a>
+            </div>
+        </div>
+        <div class="w-100 d-flex justify-content-around gallery">
+            <div class="gallery-item">
+                <a>
+                    <img src="{{ asset('img/descarga.png') }}">
+                    <div class="gallery-text">QR Irakurketa</div>
+                </a>
+            </div>
+        </div>
+    </div>
+{% endblock %}

@@ -1,0 +1,35 @@
+{% extends 'basePedestal.html.twig' %}
+{% block header %}
+{% endblock %}
+{% block body %}
+<div>
+    {{ form_start(form, {'attr': {'novalidate': 'novalidate'}}) }}
+    <div class="container mt-4">
+        <div class="row">
+            <!-- Columna izquierda: Izena, Lekua, Sortu -->
+            <div class="col-md-6">
+                <div class="mb-3">
+                    {{ form_row(form.Izena, {'attr': {'class': 'form-control'}}) }}
+                </div>
+                <div class="mb-3">
+                    {{ form_row(form.Nondik, {'attr': {'class': 'form-control'}}) }}
+                </div>
+                <div class="mt-4">
+                    {{ form_widget(form.Gehitu, {'attr': {'class': 'btn btn-primary'}}) }}
+                </div>
+            </div>
+
+            <!-- Columna derecha: Data -->
+            <div class="col-md-6">
+                <div class="mb-3">
+                    {{ form_row(form.Abizena, {'attr': {'class': 'form-control'}}) }}
+                </div>
+                <div class="mb-3">
+                    {{ form_row(form.Email, {'attr': {'class': 'form-control'}}) }}
+                </div>
+            </div>
+        </div>
+    </div>
+    {{ form_end(form) }}
+</div>
+{% endblock %}

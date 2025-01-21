@@ -1,0 +1,101 @@
+{% extends 'basePedestal.html.twig' %}
+
+{% block body %}
+    <div class="d-flex w-100">
+
+        <!-- Tabla -->
+        <div class="w-50 mt-4">
+            <!-- Contenedor flexible para el título y los botones -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1>{{ bisita.izena }}</h1>
+                <div>
+                    <!-- Botón para refrescar los datos -->
+                    <button id="refreshButton" class="btn btn-sm btn-secondary me-2">
+                        Birkargatu
+                    </button>
+
+                    <!-- Botón placeholder para la función futura -->
+                    <button id="printButton" class="btn btn-sm btn-primary">
+                        Inprimitu
+                    </button>
+                </div>
+            </div>
+            <table class="table table-striped table-hover">
+                <thead>
+                <tr>
+                    <th>Izena</th>
+                    <th>Abizena</th>
+                    <th>Nondik</th>
+                    <th>Emaila</th>
+                </tr>
+                </thead>
+                <tbody>
+                {% for bisitaria in bisitariak %}
+                    <tr>
+                        <td>{{ bisitaria.izena }}</td>
+                        <td>{{ bisitaria.abizena }}</td>
+                        <td>{{ bisitaria.nondik }}</td>
+                        <td>{{ bisitaria.email }}</td>
+                    </tr>
+                {% else %}
+                    <tr>
+                        <td colspan="4" class="text-center">Ez daude bisitariak.</td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Imagen y Formulario -->
+        <div class="w-50 mt-4">
+            <div class="mb-4">
+                <div class="d-flex justify-content-center" style="height: 300px;">
+                    <img src="{{ asset('img/descarga.png') }}" alt="Placeholder" class="img-fluid" style="max-width: 100%; height: 100%; object-fit: cover;">
+                </div>
+            </div>
+            <div class="ms-4">
+                <!-- Formulario -->
+                <h2>Gehitu Bisitaria</h2>
+                <div>
+                    {{ form_start(form, {'attr': {'novalidate': 'novalidate'}}) }}
+                    <div class="container mt-4">
+                        <div class="row">
+                            <!-- Columna izquierda: Izena, Lekua, Sortu -->
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    {{ form_row(form.Izena, {'attr': {'class': 'form-control'}}) }}
+                                </div>
+                                <div class="mb-3">
+                                    {{ form_row(form.Nondik, {'attr': {'class': 'form-control'}}) }}
+                                </div>
+                                <div class="mt-4">
+                                    {{ form_widget(form.Gehitu, {'attr': {'class': 'btn btn-primary'}}) }}
+                                </div>
+                            </div>
+
+                            <!-- Columna derecha: Data -->
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    {{ form_row(form.Abizena, {'attr': {'class': 'form-control'}}) }}
+                                </div>
+                                <div class="mb-3">
+                                    {{ form_row(form.Email, {'attr': {'class': 'form-control'}}) }}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {{ form_end(form) }}
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // Botón de imprimir (redirigir a la página de pedestal)
+        document.getElementById("printButton").addEventListener("click", function() {
+            // Redirigir a la página "pedestal"
+            window.location.href = "{{ path('app_pedestal') }}";  // Ajusta el nombre de la ruta si es necesario
+        });
+    </script>
+{% endblock %}

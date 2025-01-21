@@ -1,5 +1,4 @@
 <?php
-
 namespace App\Entity;
 
 use App\Repository\BisitaRepository;
@@ -13,14 +12,23 @@ class Bisita
     #[ORM\Column]
     private ?int $id = null;
 
-    #[ORM\Column(length: 255)]
+    #[ORM\Column(length: 255, nullable: true)]
     private ?string $Izena = null;
 
-    #[ORM\Column(length: 255)]
+    #[ORM\Column(length: 255, nullable: true)]
     private ?string $Nondik = null;
 
     #[ORM\Column]
-    private ?bool $Itxita = null;
+    private ?bool $Itxita = false;  // Valor por defecto en la propiedad
+
+    #[ORM\Column(type: 'date')]
+    private ?\DateTimeInterface $Data = null;
+
+    public function __construct()
+    {
+        // Asegurarse de que el valor por defecto sea 'false' cuando se cree una nueva instancia
+        $this->Itxita = false;
+    }
 
     public function getId(): ?int
     {
@@ -32,7 +40,7 @@ class Bisita
         return $this->Izena;
     }
 
-    public function setIzena(string $Izena): static
+    public function setIzena(?string $Izena): static
     {
         $this->Izena = $Izena;
 
@@ -44,7 +52,7 @@ class Bisita
         return $this->Nondik;
     }
 
-    public function setNondik(string $Nondik): static
+    public function setNondik(?string $Nondik): static
     {
         $this->Nondik = $Nondik;
 
@@ -59,6 +67,18 @@ class Bisita
     public function setItxita(bool $Itxita): static
     {
         $this->Itxita = $Itxita;
+
+        return $this;
+    }
+
+    public function getData(): ?\DateTimeInterface
+    {
+        return $this->Data;
+    }
+
+    public function setData(\DateTimeInterface $Data): static
+    {
+        $this->Data = $Data;
 
         return $this;
     }

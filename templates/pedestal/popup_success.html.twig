@@ -1,0 +1,23 @@
+<!-- popup_success.html.twig -->
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Éxito</title>
+</head>
+<body>
+<div class="alert alert-success text-center" style="background-color: #28a745; color: white; padding: 20px; border-radius: 5px;">
+    <h4>Bisitaria gorde da!</h4>
+    <p>Informazioa behar bezala gorde da.</p>
+</div>
+<script>
+    window.resizeTo(500, 225);  // Redimensiona la ventana a 400x200 píxeles (ajústalo como desees)
+    // Mostramos el mensaje y luego cerramos la ventana después de un breve retraso
+    setTimeout(function() {
+        window.opener.location.reload(); // Recarga la página principal
+        window.close(); // Cierra el popup
+    }, 3000); // Retardo de 1 segundo antes de cerrar el popup
+</script>
+</body>
+</html>

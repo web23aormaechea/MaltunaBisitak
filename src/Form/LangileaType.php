@@ -23,18 +23,6 @@ class LangileaType extends AbstractType
                 'label'    => 'Giltza uzten da?', // Etiqueta del checkbox
                 'required' => false, // Indica si el checkbox es obligatorio
             ])
-            ->add('Data', null, [
-                'widget' => 'single_text',
-                'attr' => [
-                    'class' => 'js-datepicker'
-                ]
-            ])
-            ->add('Firma', null, [
-                'mapped' => false, // Campo no asociado directamente a la entidad
-                'attr' => [
-                    'class' => 'signature-data'
-                ]
-            ])
             ->add('Sortu', SubmitType::class)
         ;
     }

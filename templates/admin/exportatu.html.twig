@@ -1,0 +1,101 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Exportatu{% endblock %}
+
+{% block body %}
+    <div class="d-flex justify-content-between w-100">
+        <div class="w-50 mt-4">
+            <h1>Selecciona una opción</h1>
+
+            <!-- Formulario con radio buttons y botones alineados a la misma altura -->
+            <form id="selection-form" class="d-flex align-items-center">
+                <div class="form-check me-3">
+                    <input class="form-check-input" type="radio" name="selection" id="bisita" value="Bisita">
+                    <label class="form-check-label" for="bisita">Bisita</label>
+                </div>
+                <div class="form-check me-3">
+                    <input class="form-check-input" type="radio" name="selection" id="bilera" value="Bilera">
+                    <label class="form-check-label" for="bilera">Bilera</label>
+                </div>
+                <div class="form-check me-3">
+                    <input class="form-check-input" type="radio" name="selection" id="bisitaria" value="Bisitaria">
+                    <label class="form-check-label" for="bisitaria">Bisitaria</label>
+                </div>
+
+                <!-- Botones de acción en la misma fila, alineados a la altura de los radio buttons -->
+                <div class="d-flex align-items-center">
+                    <button id="visualizar-btn" class="btn btn-primary me-2">Bistaratu</button>
+                    <button id="exportar-btn" class="btn btn-secondary">Exportatu</button>
+                </div>
+            </form>
+
+            <!-- Fila de fecha -->
+            <div class="mt-4 w-25">
+                <label for="fecha" class="form-label">Data tartea</label>
+                <input type="text" id="fecha" class="form-control js-datepicker" placeholder="Selecciona la fecha" />
+            </div>
+
+            <!-- Área para mostrar mensajes de acción -->
+            <div id="action-message" class="mt-4">
+                <!-- Aquí se mostrarán los mensajes de acción -->
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script>
+        // Definición de idioma Euskara para flatpickr
+        var Euskara = {
+            weekdays: {
+                shorthand: ['Ig', 'Al', 'Ar', 'Az', 'Og', 'Or', 'La'],
+                longhand: ['Igandea', 'Astelehena', 'Asteartea', 'Asteazkena', 'Osteguna', 'Ostirala', 'Larunbata'],
+            },
+            months: {
+                shorthand: ['Urt', 'Ots', 'Mar', 'Api', 'Mai', 'Eka', 'Uzt', 'Abu', 'Ira', 'Urr', 'Aza', 'Abe'],
+                longhand: ['Urtarrila', 'Otsaila', 'Martxoa', 'Apirila', 'Maiatza', 'Ekaina', 'Uztaila', 'Abuztua', 'Iraila', 'Urria', 'Azaroa', 'Abendua'],
+            },
+            firstDayOfWeek: 1,
+            ordinal: () => 'a',
+            rangeSeparator: ' - ',
+            weekAbbreviation: 'Ast',
+            scrollTitle: 'Korritu handitzeko',
+            toggleTitle: 'Egin klik trukatzeko',
+            amPM: ['AM', 'PM'],
+            yearAriaLabel: 'Urtea',
+            time_24hr: true,
+        };
+
+        // Configuración de flatpickr para un solo campo de fecha
+        var dateField = document.querySelector('.js-datepicker');
+        if (dateField) {
+            flatpickr(dateField, {
+                dateFormat: 'Y-m-d',
+                locale: Euskara,
+                mode: 'range',
+            });
+        }
+
+        // Manejo de botones de acción
+        document.getElementById('visualizar-btn').addEventListener('click', function() {
+            const selectedOption = document.querySelector('input[name="selection"]:checked');
+            const messageDiv = document.getElementById('action-message');
+
+            if (selectedOption) {
+                messageDiv.innerHTML = `<p>Visualizando la opción: <strong>${selectedOption.value}</strong></p>`;
+            } else {
+                messageDiv.innerHTML = '<p class="text-danger">Por favor, selecciona una opción primero.</p>';
+            }
+        });
+
+        document.getElementById('exportar-btn').addEventListener('click', function() {
+            const selectedOption = document.querySelector('input[name="selection"]:checked');
+            const messageDiv = document.getElementById('action-message');
+
+            if (selectedOption) {
+                messageDiv.innerHTML = `<p>Exportando la opción: <strong>${selectedOption.value}</strong></p>`;
+            } else {
+                messageDiv.innerHTML = '<p class="text-danger">Por favor, selecciona una opción primero.</p>';
+            }
+        });
+    </script>
+{% endblock %}

@@ -1,0 +1,75 @@
+{% extends 'base.html.twig' %}
+
+{% block body %}
+    <div class="d-flex justify-content-between w-100">
+        <!-- Formulario -->
+        <div class="w-50 me-3">
+            <h1>Langile Sarrera</h1>
+            {{ form_start(form) }}
+            <div class="container mt-4">
+                <div class="row">
+                    <!-- Columna izquierda: Izena, Lekua, Sortu -->
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            {{ form_row(form.Izena, {'attr': {'class': 'form-control'}}) }}
+                        </div>
+                        <div class="mb-3">
+                            {{ form_row(form.Nondik, {'attr': {'class': 'form-control'}}) }}
+                        </div>
+                        <div class="mb-3">
+                            {{ form_label(form.Giltza) }}
+                            {{ form_widget(form.Giltza, {'attr': {'class': 'form-check-input'}}) }}
+                        </div>
+                        <div class="mb-3">
+                            <label for="signature-pad">Firma</label>
+                            <canvas id="signature-pad" class="border" width="400" height="200"></canvas>
+                            <input type="hidden" id="signature-data" name="signature-data">
+                            <div class="mt-2">
+                                <button type="button" id="clear-signature" class="btn btn-secondary">Garbitu</button>
+                            </div>
+                        </div>
+
+                        <div class="mt-4 d-flex">
+                            {{ form_row(form.Sortu, {'attr': {'class': 'btn btn-primary'}}) }}
+                            <a href="{{ path('app_admin_langilea') }}" class="btn btn-secondary ms-2">Atzera</a>
+                        </div>
+                    </div>
+
+                    <!-- Columna derecha: Data -->
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            {{ form_row(form.Abizena, {'attr': {'class': 'form-control'}}) }}
+                        </div>
+                        <div class="mb-3">
+                            {{ form_row(form.Telefonoa, {'attr': {'class': 'form-control'}}) }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {{ form_end(form) }}
+        </div>
+    </div>
+
+    <script>
+        var signatureDataInput = document.getElementById('signature-data');
+        // Inicializar SignaturePad en el canvas
+        var canvas = document.getElementById('signature-pad');
+        var signaturePad = new SignaturePad(canvas);
+
+        // Botón para borrar la firma
+        var clearButton = document.getElementById('clear-signature');
+        clearButton.addEventListener('click', function () {
+            signaturePad.clear();
+        });
+
+        canvas.addEventListener('mousedown', function(e) {
+            console.log("Mouse event triggered: ", e);
+        });
+
+
+        document.querySelector('form').addEventListener('submit', () => {
+            signatureDataInput.value = canvas.toDataURL('image/png');
+        });
+    </script>
+
+{% endblock %}

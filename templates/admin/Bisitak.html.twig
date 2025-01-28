@@ -1,0 +1,53 @@
+{% extends 'base.html.twig' %}
+
+{% block body %}
+    <div class="d-flex justify-content-between w-100">
+        <!-- Tabla -->
+        <div class="w-50 mt-4">
+            <h1>Bisiten kudeaketa</h1>
+            <table class="table table-striped table-hover">
+                <thead>
+                <tr>
+                    <th>Izena</th>
+                    <th>Nondik</th>
+                    <th>Data</th>
+                    <th></th>
+                </tr>
+                </thead>
+                <tbody>
+                {% for bisita in bisitak %}
+                    <tr>
+                        <td>{{ bisita.izena }}</td>
+                        <td>{{ bisita.nondik }}</td>
+                        <td>{{ bisita.data|date('Y-m-d') }}</td>
+                        <td>
+                            <form method="post" action="{{ path('app_bisita_update_bisita', { id: bisita.id }) }}" onsubmit="return confirm('Ziur bisita hau itxi nahi duzula?');">
+                                <button class="btn btn-success">Itxi</button>
+                            </form>
+                        </td>
+
+                    </tr>
+                {% else %}
+                    <tr>
+                        <td colspan="4" class="text-center">Ez daude bisita irekiak.</td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+            {% for message in app.flashes('success') %}
+                <div class="alert alert-success">
+                    {{ message }}
+                </div>
+            {% endfor %}
+            {% for message in app.flashes('danger') %}
+                <div class="alert alert-danger">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <script>
+
+    </script>
+{% endblock %}

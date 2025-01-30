@@ -5,10 +5,10 @@
 {% block body %}
     <div class="d-flex justify-content-between w-100">
         <div class="w-50 mt-4">
-            <h1>Selecciona una opción</h1>
+            <h1>Hautatu kudeatu beharreko datuak</h1>
 
             <!-- Formulario con radio buttons y botones alineados a la misma altura -->
-            <form id="selection-form" class="d-flex align-items-center">
+            <form id="selection-form" class="d-flex align-items-center justify-content-center w-75">
                 <div class="form-check me-3">
                     <input class="form-check-input" type="radio" name="selection" id="bisita" value="Bisita">
                     <label class="form-check-label" for="bisita">Bisita</label>
@@ -21,23 +21,41 @@
                     <input class="form-check-input" type="radio" name="selection" id="bisitaria" value="Bisitaria">
                     <label class="form-check-label" for="bisitaria">Bisitaria</label>
                 </div>
+                <div class="form-check me-3">
+                    <input class="form-check-input" type="radio" name="selection" id="langilea" value="Langilea">
+                    <label class="form-check-label" for="langilea">Langilea</label>
+                </div>
 
                 <!-- Botones de acción en la misma fila, alineados a la altura de los radio buttons -->
-                <div class="d-flex align-items-center">
+
+            </form>
+
+                <!-- Fila de fecha -->
+            <div class="d-flex align-items-center justify-content-center w-75">
+                <div class="mt-4 w-50">
+                    <label for="fecha" class="form-label">Data tartea</label>
+                    <input type="text" id="fecha" class="form-control js-datepicker" placeholder="Selecciona la fecha" />
+                </div>
+            </div>
+            <div class="d-flex align-items-center justify-content-center w-75">
+                <div class="mt-4 d-flex align-items-end justify-content-between w-50">
                     <button id="visualizar-btn" class="btn btn-primary me-2">Bistaratu</button>
                     <button id="exportar-btn" class="btn btn-secondary">Exportatu</button>
                 </div>
-            </form>
-
-            <!-- Fila de fecha -->
-            <div class="mt-4 w-25">
-                <label for="fecha" class="form-label">Data tartea</label>
-                <input type="text" id="fecha" class="form-control js-datepicker" placeholder="Selecciona la fecha" />
             </div>
+
 
             <!-- Área para mostrar mensajes de acción -->
             <div id="action-message" class="mt-4">
                 <!-- Aquí se mostrarán los mensajes de acción -->
+            </div>
+            <div class="mt-4">
+                <table id="data-table" class="table table-striped d-none">
+                    <thead>
+                    <tr id="table-header"></tr>
+                    </thead>
+                    <tbody id="table-body"></tbody>
+                </table>
             </div>
         </div>
     </div>
@@ -75,27 +93,140 @@
             });
         }
 
-        // Manejo de botones de acción
-        document.getElementById('visualizar-btn').addEventListener('click', function() {
+        document.getElementById('visualizar-btn').addEventListener('click', async function() {
             const selectedOption = document.querySelector('input[name="selection"]:checked');
-            const messageDiv = document.getElementById('action-message');
+            const dateField = document.getElementById('fecha');
+            const table = document.getElementById('data-table');
+            const tableHeader = document.getElementById('table-header');
+            const tableBody = document.getElementById('table-body');
 
-            if (selectedOption) {
-                messageDiv.innerHTML = `<p>Visualizando la opción: <strong>${selectedOption.value}</strong></p>`;
-            } else {
-                messageDiv.innerHTML = '<p class="text-danger">Por favor, selecciona una opción primero.</p>';
+            if (!selectedOption || !dateField.value) {
+                alert('Selecciona una opción y un rango de fechas.');
+                return;
+            }
+
+            const requestData = {
+                selection: selectedOption.value,
+                dateRange: dateField.value
+            };
+
+            try {
+                const response = await fetch('/exportatu/datuak', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(requestData)
+                });
+
+                const data = await response.json();
+
+                if (data.error) {
+                    alert(data.error);
+                    return;
+                }
+
+                // Limpiar tabla
+                tableHeader.innerHTML = '';
+                tableBody.innerHTML = '';
+
+                // Definir columnas con nombres que coincidan con los datos recibidos
+                let columns = [];
+                switch (selectedOption.value) {
+                    case 'Bilera':
+                        columns = ['Izena', 'Lekua', 'Data'];
+                        break;
+                    case 'Bisita':
+                        columns = ['Izena', 'Nondik', 'Data'];
+                        break;
+                    case 'Bisitaria':
+                        columns = ['Izena', 'Abizena', 'Nondik', 'Email'];
+                        break;
+                    case 'Langilea':
+                        columns = ['Izena', 'Abizena', 'Telefonoa', 'Nondik', 'Firma'];  // Verifica que 'Firma' esté aquí
+                        break;
+                }
+
+                // Generar encabezados
+                columns.forEach(col => {
+                    let th = document.createElement('th');
+                    th.textContent = col;
+                    tableHeader.appendChild(th);
+                });
+
+                // Llenar la tabla con los datos
+                data.forEach(row => {
+                    let tr = document.createElement('tr');
+                    columns.forEach(col => {
+                        let td = document.createElement('td');
+
+                        if (col === 'Firma' && row[col]) {
+                            let imageUrl = `uploads/signatures/${row[col]}`;
+
+                            let img = document.createElement('img');
+                            img.src = imageUrl;
+                            img.alt = 'Firma';
+                            img.style.width = '100px';
+                            img.style.height = 'auto';
+                            td.appendChild(img);
+                        } else if (col === 'Data' && row[col]) {
+                            let fecha = new Date(row[col].date).toLocaleDateString();
+                            td.textContent = fecha;
+                        } else {
+                            td.textContent = row[col] ?? '—';
+                        }
+                        tr.appendChild(td);
+                    });
+                    tableBody.appendChild(tr);
+                });
+
+                table.classList.remove('d-none');
+
+            } catch (error) {
+                console.error('Error fetching data:', error);
             }
         });
 
-        document.getElementById('exportar-btn').addEventListener('click', function() {
-            const selectedOption = document.querySelector('input[name="selection"]:checked');
-            const messageDiv = document.getElementById('action-message');
 
-            if (selectedOption) {
-                messageDiv.innerHTML = `<p>Exportando la opción: <strong>${selectedOption.value}</strong></p>`;
-            } else {
-                messageDiv.innerHTML = '<p class="text-danger">Por favor, selecciona una opción primero.</p>';
+
+
+        document.getElementById('exportar-btn').addEventListener('click', async function() {
+            const selectedOption = document.querySelector('input[name="selection"]:checked');
+            const dateField = document.getElementById('fecha');
+
+            if (!selectedOption || !dateField.value) {
+                alert('Selecciona una opción y un rango de fechas.');
+                return;
+            }
+
+            const requestData = {
+                selection: selectedOption.value,
+                dateRange: dateField.value
+            };
+
+            try {
+                const response = await fetch('/exportatu/excel', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(requestData)
+                });
+
+                if (!response.ok) {
+                    throw new Error('Error al exportar los datos.');
+                }
+
+                const blob = await response.blob();
+                const downloadUrl = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = downloadUrl;
+                a.download = `export_${selectedOption.value}.xlsx`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+
+            } catch (error) {
+                console.error('Error exportando a Excel:', error);
+                alert('Hubo un error al exportar los datos.');
             }
         });
+
     </script>
 {% endblock %}

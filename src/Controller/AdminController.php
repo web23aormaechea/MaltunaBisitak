@@ -4,6 +4,7 @@ namespace App\Controller;
 
 use App\Entity\Bilera;
 use App\Entity\Bisita;
+use App\Entity\Bisitaria;
 use App\Entity\Langilea;
 use App\Form\BileraType;
 use App\Form\LangileaType;
@@ -13,6 +14,13 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Component\HttpFoundation\JsonResponse;
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
+use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
+use PhpOffice\PhpSpreadsheet\Worksheet\Drawing;
+use Symfony\Component\HttpFoundation\StreamedResponse;
+use Symfony\Component\HttpFoundation\ResponseHeaderBag;
 
 
 class AdminController extends AbstractController
@@ -205,6 +213,189 @@ class AdminController extends AbstractController
     {
         return $this->render('admin/exportatu.html.twig');
     }
+    #[Route('/exportatu/datuak', name: 'app_exportatu_datuak', methods: ['POST'])]
+    public function getExportData(Request $request, EntityManagerInterface $entityManager): JsonResponse
+    {
+        $data = json_decode($request->getContent(), true);
+
+        if (!isset($data['selection'], $data['dateRange']) || empty($data['selection']) || empty($data['dateRange'])) {
+            return new JsonResponse(['error' => 'Faltan parámetros'], Response::HTTP_BAD_REQUEST);
+        }
+
+        $selection = $data['selection'];
+        [$startDate, $endDate] = explode(' - ', $data['dateRange']);
+        $startDate = new \DateTime($startDate);
+        $endDate = new \DateTime($endDate);
+
+        $result = [];
+
+        switch ($selection) {
+            case 'Bilera':
+                $query = $entityManager->createQuery(
+                    "SELECT b.Izena, b.Lekua, b.Data 
+                 FROM App\Entity\Bilera b
+                 WHERE b.Data BETWEEN :startDate AND :endDate"
+                );
+                break;
+
+            case 'Bisita':
+                $query = $entityManager->createQuery(
+                    "SELECT b.Izena, b.Nondik, b.Data 
+                 FROM App\Entity\Bisita b
+                 WHERE b.Data BETWEEN :startDate AND :endDate"
+                );
+                break;
+
+            case 'Bisitaria':
+                $query = $entityManager->createQuery(
+                    "SELECT bi.Izena, bi.Abizena, bi.Nondik, bi.Email, 
+                        COALESCE(bs.Data, bl.Data) AS data
+                 FROM App\Entity\Bisitaria bi
+                 LEFT JOIN bi.Bisita bs
+                 LEFT JOIN bi.Bilera bl
+                 WHERE (bs.Data BETWEEN :startDate AND :endDate) 
+                    OR (bl.Data BETWEEN :startDate AND :endDate)"
+                );
+                break;
+
+            case 'Langilea':
+                $query = $entityManager->createQuery(
+                    "SELECT l.Izena, l.Abizena, l.Telefonoa, l.Nondik, l.Firma 
+                 FROM App\Entity\Langilea l
+                 WHERE l.Data BETWEEN :startDate AND :endDate"
+                );
+                break;
+
+            default:
+                return new JsonResponse(['error' => 'Selección no válida'], Response::HTTP_BAD_REQUEST);
+        }
+
+        $query->setParameter('startDate', $startDate)
+            ->setParameter('endDate', $endDate);
+
+        $result = $query->getResult();
+
+        return new JsonResponse($result);
+    }
+
+    #[Route('/exportatu/excel', name: 'app_exportatu_excel', methods: ['POST'])]
+    public function exportToExcel(Request $request, EntityManagerInterface $entityManager): StreamedResponse
+    {
+        $data = json_decode($request->getContent(), true);
+
+        if (!isset($data['selection'], $data['dateRange']) || empty($data['selection']) || empty($data['dateRange'])) {
+            return new JsonResponse(['error' => 'Faltan parámetros'], Response::HTTP_BAD_REQUEST);
+        }
+
+        $selection = $data['selection'];
+        [$startDate, $endDate] = explode(' - ', $data['dateRange']);
+        $startDate = new \DateTime($startDate);
+        $endDate = new \DateTime($endDate);
+
+        $result = [];
+        $columns = [];
+
+        switch ($selection) {
+            case 'Bilera':
+                $query = $entityManager->createQuery(
+                    "SELECT b.Izena, b.Lekua, b.Data 
+                 FROM App\Entity\Bilera b
+                 WHERE b.Data BETWEEN :startDate AND :endDate"
+                );
+                $columns = ['Izena', 'Lekua', 'Data'];
+                break;
+
+            case 'Bisita':
+                $query = $entityManager->createQuery(
+                    "SELECT b.Izena, b.Nondik, b.Data 
+                 FROM App\Entity\Bisita b
+                 WHERE b.Data BETWEEN :startDate AND :endDate"
+                );
+                $columns = ['Izena', 'Nondik', 'Data'];
+                break;
+
+            case 'Bisitaria':
+                $query = $entityManager->createQuery(
+                    "SELECT bi.Izena, bi.Abizena, bi.Nondik, bi.Email, 
+                        COALESCE(bs.Data, bl.Data) AS data
+                 FROM App\Entity\Bisitaria bi
+                 LEFT JOIN bi.Bisita bs
+                 LEFT JOIN bi.Bilera bl
+                 WHERE (bs.Data BETWEEN :startDate AND :endDate) 
+                    OR (bl.Data BETWEEN :startDate AND :endDate)"
+                );
+                $columns = ['Izena', 'Abizena', 'Nondik', 'Email'];
+                break;
+
+            case 'Langilea':
+                $query = $entityManager->createQuery(
+                    "SELECT l.Izena, l.Abizena, l.Telefonoa, l.Nondik, l.Firma 
+                 FROM App\Entity\Langilea l
+                 WHERE l.Data BETWEEN :startDate AND :endDate"
+                );
+                $columns = ['Izena', 'Abizena', 'Telefonoa', 'Nondik', 'Firma'];
+                break;
+
+            default:
+                return new JsonResponse(['error' => 'Selección no válida'], Response::HTTP_BAD_REQUEST);
+        }
+
+        $query->setParameter('startDate', $startDate)
+            ->setParameter('endDate', $endDate);
+
+        $result = $query->getResult();
+
+        // Crear un nuevo documento de Excel
+        $spreadsheet = new Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+
+        // Escribir encabezados
+        foreach ($columns as $colIndex => $colName) {
+            $colLetter = Coordinate::stringFromColumnIndex($colIndex + 1); // Convierte número en letra (1 -> A, 2 -> B, etc.)
+            $sheet->setCellValue($colLetter . '1', $colName);
+        }
+
+        // Escribir datos
+        foreach ($result as $rowIndex => $rowData) {
+            foreach ($columns as $colIndex => $colName) {
+                $colLetter = Coordinate::stringFromColumnIndex($colIndex + 1);
+                $cellCoordinate = $colLetter . ($rowIndex + 2);
+
+                if ($colName === 'Firma') {
+                    $imagePath = __DIR__ . "/../../public/uploads/signatures/" . $rowData['Firma']; // Ruta absoluta
+                    if (file_exists($imagePath)) {
+                        $drawing = new Drawing();
+                        $drawing->setPath($imagePath);
+                        $drawing->setCoordinates($cellCoordinate);
+                        $drawing->setWorksheet($sheet);
+                        $drawing->setWidth(70);  // Ajusta el ancho de la imagen
+                        $drawing->setHeight(50); // Ajusta la altura de la imagen
+
+                        // 🔹 Aumentar la altura de la fila para que la imagen se vea bien
+                        $sheet->getRowDimension($rowIndex + 2)->setRowHeight(50);
+                    } else {
+                        $sheet->setCellValue($cellCoordinate, 'Sin firma');
+                    }
+                    // 🔹 Ajustar el ancho de la columna "Firma" solo una vez
+                    $sheet->getColumnDimension($colLetter)->setWidth(15);
+                } else {
+                    $sheet->setCellValue($cellCoordinate, $rowData[$colName] ?? '');
+                }
+            }
+        }
+
+        // Generar respuesta de descarga
+        $response = new StreamedResponse(function () use ($spreadsheet) {
+            $writer = new Xlsx($spreadsheet);
+            $writer->save('php://output');
+        });
+
+        $response->headers->set('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        $response->headers->set('Content-Disposition', ResponseHeaderBag::DISPOSITION_ATTACHMENT, 'datos_exportados.xlsx');
+
+        return $response;
+    }
+
     #[Route('/egutegia', name: 'app_egutegia')]
     public function calendar(): Response
     {

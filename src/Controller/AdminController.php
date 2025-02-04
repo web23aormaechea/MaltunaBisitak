@@ -8,12 +8,13 @@ use App\Entity\Bisitaria;
 use App\Entity\Langilea;
 use App\Form\BileraType;
 use App\Form\LangileaType;
+use App\Entity\Egutegia;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\HttpFoundation\RedirectResponse;
-use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
@@ -21,6 +22,7 @@ use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
 use PhpOffice\PhpSpreadsheet\Worksheet\Drawing;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 use Symfony\Component\HttpFoundation\ResponseHeaderBag;
+
 
 
 class AdminController extends AbstractController
@@ -260,7 +262,7 @@ class AdminController extends AbstractController
 
             case 'Langilea':
                 $query = $entityManager->createQuery(
-                    "SELECT l.Izena, l.Abizena, l.Telefonoa, l.Nondik, l.Firma 
+                    "SELECT l.Izena, l.Abizena, l.Telefonoa, l.Nondik, l.Data, l.Firma 
                  FROM App\Entity\Langilea l
                  WHERE l.Data BETWEEN :startDate AND :endDate"
                 );
@@ -329,11 +331,11 @@ class AdminController extends AbstractController
 
             case 'Langilea':
                 $query = $entityManager->createQuery(
-                    "SELECT l.Izena, l.Abizena, l.Telefonoa, l.Nondik, l.Firma 
+                    "SELECT l.Izena, l.Abizena, l.Telefonoa, l.Nondik, l.Data, l.Firma 
                  FROM App\Entity\Langilea l
                  WHERE l.Data BETWEEN :startDate AND :endDate"
                 );
-                $columns = ['Izena', 'Abizena', 'Telefonoa', 'Nondik', 'Firma'];
+                $columns = ['Izena', 'Abizena', 'Telefonoa', 'Nondik', 'Data', 'Firma'];
                 break;
 
             default:
@@ -399,9 +401,103 @@ class AdminController extends AbstractController
     #[Route('/egutegia', name: 'app_egutegia')]
     public function calendar(): Response
     {
-        $year = (new \DateTime())->format('Y');
+        // Obtener el año actual y calcular el rango del calendario escolar
+        $currentYear = (int)date('Y');
+        $currentMonth = (int)date('m');
+
+// Si estamos antes de septiembre, el rango será de septiembre del año anterior hasta julio del año actual
+        if ($currentMonth < 9) {
+            $startYear = $currentYear - 1;
+            $endYear = $currentYear;
+        } else {
+            $startYear = $currentYear;
+            $endYear = $currentYear + 1;
+        }
+
+// Definir las fechas del calendario escolar (desde septiembre hasta julio)
+        $inicio = new \DateTime("first day of September $startYear");
+        $fin = new \DateTime("last day of July $endYear");
+
+// Consultar las fechas guardadas en la base de datos (Egutegia) dentro de este rango
+        $dates = $this->em->getRepository(Egutegia::class)->createQueryBuilder('e')
+            ->where('e.Data BETWEEN :inicio AND :fin')
+            ->setParameter('inicio', $inicio)
+            ->setParameter('fin', $fin)
+            ->getQuery()
+            ->getResult();
+
+// Pasar las fechas seleccionadas como objetos DateTime
+        $fechasSeleccionadas = [];
+        foreach ($dates as $egutegia) {
+            // Convertimos las fechas a formato Y-m-d para que coincidan con el formato que usas en el calendario
+            $fechasSeleccionadas[] = $egutegia->getData()->format('Y-m-d');
+        }
+
+// Redirigir y cargar el calendario con las fechas seleccionadas
         return $this->render('admin/Egutegia.html.twig', [
-            'year' => $year,
+            'inicio' => $inicio,
+            'fin' => $fin,
+            'fechasSeleccionadas' => $fechasSeleccionadas
         ]);
+    }
+
+
+
+
+
+    #[Route('/egutegia/gorde', name: 'app_egutegia_gorde', methods: ['POST'])]
+    public function save(Request $request, EntityManagerInterface $entityManager): Response
+    {
+        $fechas = $request->request->get('fechas');
+
+        if ($fechas) {
+            $fechasArray = explode(',', $fechas);
+
+            foreach ($fechasArray as $fecha) {
+                if (!empty($fecha)) {
+                    $egutegia = new Egutegia(); // Instancia de la entidad
+                    $egutegia->setData(new \DateTime($fecha));
+
+                    $entityManager->persist($egutegia);
+                }
+            }
+
+            $entityManager->flush();
+        }
+
+        return $this->redirectToRoute('app_egutegia'); // Redirigir de nuevo al calendario
+    }
+
+    #[Route('/egutegia/ezabatu', name: 'app_egutegia_ezabatu', methods: ['POST'])]
+    public function borrarDia(Request $request, EntityManagerInterface $entityManager): JsonResponse
+    {
+        // Obtener la fecha enviada desde el frontend
+        $data = json_decode($request->getContent(), true);
+        $date = $data['date'] ?? null;
+
+        if ($date) {
+            // Convertir la cadena de fecha a un objeto DateTime
+            $dateObj = \DateTime::createFromFormat('Y-m-d', $date);
+
+            // Verificar si la conversión fue exitosa
+            if (!$dateObj) {
+                return new JsonResponse(['success' => false, 'message' => 'Fecha no válida'], 400);
+            }
+
+            // Buscar el registro en la base de datos
+            $dayToDelete = $entityManager->getRepository(Egutegia::class)->findOneBy(['Data' => $dateObj]);
+
+            if ($dayToDelete) {
+                // Eliminar el día encontrado
+                $entityManager->remove($dayToDelete);
+                $entityManager->flush();
+
+                // Devolver una respuesta exitosa sin mensaje
+                return new JsonResponse(['success' => true]);
+            }
+        }
+
+        // Si no se proporciona una fecha válida o no se encuentra el día, retornar error (sin mensajes explícitos)
+        return new JsonResponse(['success' => false], 400);
     }
 }

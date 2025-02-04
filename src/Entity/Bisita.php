@@ -24,6 +24,9 @@ class Bisita
     #[ORM\Column(type: 'date')]
     private ?\DateTimeInterface $Data = null;
 
+    #[ORM\Column(nullable: true)]
+    private ?bool $Onartuta = null;
+
     public function __construct()
     {
         // Asegurarse de que el valor por defecto sea 'false' cuando se cree una nueva instancia
@@ -79,6 +82,18 @@ class Bisita
     public function setData(\DateTimeInterface $Data): static
     {
         $this->Data = $Data;
+
+        return $this;
+    }
+
+    public function isOnartuta(): ?bool
+    {
+        return $this->Onartuta;
+    }
+
+    public function setOnartuta(?bool $Onartuta): static
+    {
+        $this->Onartuta = $Onartuta;
 
         return $this;
     }

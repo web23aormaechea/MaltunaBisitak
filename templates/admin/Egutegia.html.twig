@@ -1,0 +1,258 @@
+{% extends 'base.html.twig' %}
+
+{% block body %}
+    <h1>Eskola Egutegia</h1>
+
+    <form method="POST" action="{{ path('app_egutegia_gorde') }}">
+        <div id="calendar">
+            {% set start_date = inicio %}
+            {% set end_date = fin %}
+            {% set today = "now"|date('Y-m-d') %}
+
+            {# Crear una lista de meses para dividir el calendario en partes mensuales #}
+            {% set months = [] %}
+            {% set current_date = start_date %}
+
+            {# Dividir el calendario en meses de septiembre a julio #}
+            {% for i in 0..11 %}
+                {% set month_start = current_date %}
+                {% set month_end = month_start|date('Y-m-t') %}
+                {% set months = months|merge([{'start': month_start, 'end': month_end}]) %}
+                {% set current_date = month_end|date_modify('+1 day') %}
+            {% endfor %}
+
+            {# Meses en euskera #}
+            {% set months_euskera = {
+                1: 'Urtarrila', 2: 'Otsaila', 3: 'Martxoa', 4: 'Apirila', 5: 'Maiatza',
+                6: 'Ekaina', 7: 'Uztaila', 8: 'Abuztua', 9: 'Iraila', 10: 'Urria',
+                11: 'Azaroa', 12: 'Abendua'
+            } %}
+
+            {# Para cada mes, generar su calendario #}
+            {% for month in months %}
+                <div class="month">
+                    <h2>{{ months_euskera[month.start|date('n')] }} {{ month.start|date('Y') }}</h2>
+                    <div class="calendar-month">
+                        {# Cabecera con los días de la semana #}
+                        <div class="weekdays">
+                            {% for day in ['Al', 'Ar', 'Az', 'Og', 'Or', 'La', 'Ig'] %}
+                                <div class="weekday">{{ day }}</div>
+                            {% endfor %}
+                        </div>
+
+                        <div class="calendar-body">
+                            {# Calcular el primer día de la semana para el mes #}
+                            {% set first_day_of_month = month.start|date('N') %}
+                            {% set num_days_in_month = month.end|date('t') %}
+
+                            {# Crear espacios vacíos antes de que empiecen los días del mes #}
+                            {% set current_day = month.start %}
+                            {% set empty_days = first_day_of_month - 1 %}
+                            {% set week = [] %}
+
+                            {# Agregar días vacíos antes del primer día del mes #}
+                            {% for i in 0..(empty_days - 1) %}
+                                {% set week = week|merge([null]) %}
+                            {% endfor %}
+
+                            {# Generar los días del mes #}
+                            {% for i in 0..(num_days_in_month - 1) %}
+                                {% set current_date_str = current_day %}
+                                {% set is_weekend = current_day|date('N') > 5 %}
+
+                                {# Agregar el día al array de la semana #}
+                                {% set week = week|merge([current_date_str|date('Y-m-d')]) %}
+
+                                {# Si es domingo (fin de semana), cerramos la semana y comenzamos la siguiente #}
+                                {% if current_day|date('N') == 7 %}
+                                    <div class="week">
+                                        {% for day in week %}
+                                            <div class="day
+                                                {% if day in fechasSeleccionadas %} saved{% endif %}
+                                                {% if day is not null and (day|date('N') > 5 or day|date('m') == '08') %} weekend{% endif %}
+                                                {% if day is null %} empty{% endif %}"
+                                                 data-date="{{ day }}"
+                                                    {% if day is not null and (day < today or (day|date('N') > 5 or day|date('m') == '08')) %} data-disabled="true"{% endif %}>
+                                                {% if day is not null %}{{ day|date('d') }}{% endif %}
+                                            </div>
+                                        {% endfor %}
+                                    </div>
+                                    {% set week = [] %}  {# Reiniciar la semana para empezar con la siguiente #}
+                                {% endif %}
+
+                                {% set current_day = current_day|date_modify('+1 day') %}
+                            {% endfor %}
+
+                            {# Rellenar la última semana con los días faltantes si es necesario #}
+                            {% if week is not empty %}
+                                <div class="week">
+                                    {% for day in week %}
+                                        <div class="day
+                                            {% if day in fechasSeleccionadas %} saved{% endif %}
+                                            {% if day is not null and (day|date('N') > 5 or day|date('m') == '08') %} weekend{% endif %}
+                                            {% if day is null %} empty{% endif %}"
+                                             data-date="{{ day }}"
+                                                {% if day is null %} data-disabled="true"{% endif %}
+                                                {% if day is not null and (day < today or (day|date('N') > 5 or day|date('m') == '08')) %} data-disabled="true"{% endif %}>
+                                            {% if day is not null %}{{ day|date('d') }}{% endif %}
+                                        </div>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+
+        <form method="POST" action="{{ path('app_egutegia_gorde') }}">
+            <input type="hidden" name="fechas" value="" id="selected_dates">
+            <button type="submit" class="mt-2 btn btn-primary">Gorde Aukeratutako Data</button>
+        </form>
+
+    </form>
+    <style>
+        #calendar {
+            display: flex;
+            flex-wrap: wrap; /* Los meses se agruparán en filas */
+            margin-top: 20px;
+            gap: 20px; /* Espacio entre los bloques de meses */
+        }
+
+        .month {
+            width: 30%; /* 3 meses por fila */
+            box-sizing: border-box;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            background-color: #f9f9f9;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .calendar-month {
+            display: flex;
+            flex-direction: column; /* Las semanas van una encima de otra */
+        }
+
+        .weekdays {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr); /* Los días de la semana en fila horizontal */
+            font-weight: bold;
+            margin-bottom: 10px; /* Espacio entre los días de la semana y las semanas */
+        }
+
+        .weekday {
+            text-align: center;
+        }
+
+        .calendar-body {
+            display: flex;
+            flex-direction: column; /* Las semanas se apilan verticalmente */
+            gap: 10px; /* Espacio entre semanas */
+        }
+
+        .week {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr); /* 7 días por semana */
+            grid-gap: 5px;
+        }
+
+        .day {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            transition: background-color 0.3s ease;
+            cursor: pointer;
+            text-align: center;
+        }
+
+        .day:hover {
+            background-color: #f0f0f0;
+        }
+
+        .day.selected {
+            background-color: #4CAF50;
+            color: white;
+        }
+        .day.saved {
+            background-color: #007bff;  /* Fondo azul */
+            color: white;
+        }
+        .weekend {
+            color: red;
+            background-color: #f8d7da;
+        }
+
+        .empty {
+            visibility: hidden;
+        }
+
+        .day[data-disabled="true"] {
+            cursor: not-allowed;
+        }
+
+        h2 {
+            text-align: center;
+            margin-bottom: 10px;
+        }
+
+    </style>
+
+    <script>
+        // Función para seleccionar y deseleccionar los días
+        document.querySelectorAll('.day').forEach(day => {
+            day.addEventListener('click', function () {
+                if (!this.hasAttribute('data-disabled')) { // Solo permite seleccionar si no está deshabilitado
+                    // Si el día tiene la clase "saved", mostrar confirmación para eliminar
+                    if (this.classList.contains('saved')) {
+                        const confirmDelete = confirm('¿Estás seguro de que deseas eliminar este día?');
+                        if (confirmDelete) {
+                            // Si el usuario confirma, quitar la clase "saved"
+                            deleteDayFromDatabase(this, this.dataset.date);
+                        }
+                    } else {
+                        // Si el día no tiene la clase "saved", alternar la clase "selected"
+                        this.classList.toggle('selected');
+                        updateSelectedDates();
+                    }
+                }
+            });
+        });
+
+        function updateSelectedDates() {
+            const selectedDays = document.querySelectorAll('.day.selected');
+            const selectedDates = [];
+
+            selectedDays.forEach(day => {
+                selectedDates.push(day.dataset.date);
+            });
+
+            // Actualizar el campo oculto con las fechas seleccionadas
+            document.getElementById('selected_dates').value = selectedDates.join(',');
+        }
+        function deleteDayFromDatabase(dayElement, date) {
+            fetch("{{ path('app_egutegia_ezabatu') }}", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({ date: date })
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // Si la respuesta es exitosa, eliminar la clase "saved" y cambiar el color
+                        dayElement.classList.remove('saved');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                });
+        }
+    </script>
+
+{% endblock %}

@@ -8,16 +8,16 @@
             <!-- Contenedor flexible para el título y los botones -->
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <h1>{{ bisita.izena }}</h1>
-                <div>
+                <div class="d-flex justify-content-between align-items-center mb-4">
                     <!-- Botón para refrescar los datos -->
-                    <button id="refreshButton" class="btn btn-sm btn-secondary me-2">
+                    <button id="refreshButton" class="btn btn-secondary me-2">
                         Eguneratu
                     </button>
-
-                    <!-- Botón placeholder para la función futura -->
-                    <button id="printButton" class="btn btn-sm btn-primary">
-                        Inprimitu
-                    </button>
+                    <form action="{{ path('app_pedestal_bisita_lista', {'id': bisita.id}) }}" method="get">
+                        <button type="submit" class="btn btn-primary">
+                                Imprimatu
+                        </button>
+                    </form>
                 </div>
             </div>
             <table class="table table-striped table-hover">
@@ -50,7 +50,7 @@
         <div class="w-50 mt-4">
             <div class="mb-4">
                 <div class="d-flex justify-content-center" style="height: 300px;">
-                    <img src="{{ asset('img/descarga.png') }}" alt="Placeholder" class="img-fluid" style="max-width: 100%; height: 100%; object-fit: cover;">
+                    <img src="{{ qr_code_data_uri(qrUrl) }}" alt="QR Code" class="img-fluid" style="max-width: 100%; height: 100%; object-fit: cover;">
                 </div>
             </div>
             <div class="ms-4">
@@ -92,10 +92,8 @@
     </div>
 
     <script>
-        // Botón de imprimir (redirigir a la página de pedestal)
-        document.getElementById("printButton").addEventListener("click", function() {
-            // Redirigir a la página "pedestal"
-            window.location.href = "{{ path('app_pedestal') }}";  // Ajusta el nombre de la ruta si es necesario
+        document.getElementById('refreshButton').addEventListener('click', function() {
+            location.reload(); // Recarga la página
         });
     </script>
 {% endblock %}

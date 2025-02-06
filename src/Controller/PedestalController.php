@@ -83,7 +83,6 @@ class PedestalController extends AbstractController
     #[Route('/popup_success', name: 'popup_success')]
     public function popupSuccess(): Response
     {
-        // Esta respuesta podría ser un HTML muy simple o incluso un script JS para cerrar el popup
         return $this->render('pedestal/popup_success.html.twig');
     }
 
@@ -142,12 +141,59 @@ class PedestalController extends AbstractController
             ->getQuery()
             ->getResult();
 
+        $webUrl = $_ENV['WEB_URL'];
+        $qrUrl = $webUrl . 'bisita/pedestal/' . $bisita->getId();  // Si 'bisita' es un objeto
         // Renderizar la vista con el formulario y la lista de Bisitaria
         return $this->render('pedestal/Bisitaria.html.twig', [
             'form' => $form->createView(),
+            'qrUrl' => $qrUrl,
             'bisita' => $bisita,
             'bisitariak' => $bisitariak,
         ]);
     }
 
+    #[Route('/pedestal/bisita/imprimatu/{id}', name: 'app_pedestal_bisita_imprimatu')]
+    public function imprimatuBisitaria(int $id, EntityManagerInterface $entityManager): Response
+    {
+        $bisitaria = $entityManager->getRepository(Bisitaria::class)->find($id);
+        if (!$bisitaria) {
+            return new Response('', Response::HTTP_NO_CONTENT);
+        }
+
+        $this->enviarAImpresora($bisitaria);
+
+        return new Response('', Response::HTTP_NO_CONTENT);
+    }
+
+    #[Route('/pedestal/bisita/lista/{id}', name: 'app_pedestal_bisita_lista')]
+    public function imprimatuLista(int $id, EntityManagerInterface $entityManager): Response
+    {
+        $bisita = $entityManager->getRepository(Bisita::class)->find($id);
+        if (!$bisita) {
+            return new Response('Bisita no encontrada', Response::HTTP_NOT_FOUND);
+        }
+
+        $bisitariak = $entityManager->getRepository(Bisitaria::class)->findBy(['Bisita' => $bisita]);
+        foreach ($bisitariak as $bisitaria) {
+            $this->enviarAImpresora($bisitaria);
+            usleep(1000000); // Añadir 0.5 segundos de delay entre impresiones
+        }
+
+        return new Response('', Response::HTTP_NO_CONTENT);
+    }
+
+    private function enviarAImpresora(Bisitaria $bisitaria): void
+    {
+        $contenido = "\n\n          " . $bisitaria->getIzena() . " " . $bisitaria->getAbizena() . "\n";
+        $contenido .= "\n          " . $bisitaria->getNondik();
+
+        $tempFile = tempnam(sys_get_temp_dir(), 'print_');
+        file_put_contents($tempFile, $contenido);
+
+        $printerIp = '10.23.72.93';
+        $printerName = 'ZPRINT';
+        shell_exec("lpr -S $printerIp -P $printerName -d $tempFile");
+
+        unlink($tempFile);
+    }
 }

@@ -4,11 +4,12 @@ namespace App\Controller;
 
 use App\Entity\Bilera;
 use App\Entity\Bisita;
-use App\Entity\Bisitaria;
+use App\Entity\User;
 use App\Entity\Langilea;
 use App\Form\BileraType;
 use App\Form\LangileaType;
 use App\Entity\Egutegia;
+use App\Form\UserType;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -22,6 +23,8 @@ use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
 use PhpOffice\PhpSpreadsheet\Worksheet\Drawing;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 use Symfony\Component\HttpFoundation\ResponseHeaderBag;
+use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
+
 
 
 
@@ -441,10 +444,6 @@ class AdminController extends AbstractController
         ]);
     }
 
-
-
-
-
     #[Route('/egutegia/gorde', name: 'app_egutegia_gorde', methods: ['POST'])]
     public function save(Request $request, EntityManagerInterface $entityManager): Response
     {
@@ -499,5 +498,54 @@ class AdminController extends AbstractController
 
         // Si no se proporciona una fecha válida o no se encuentra el día, retornar error (sin mensajes explícitos)
         return new JsonResponse(['success' => false], 400);
+    }
+    #[Route('/Erabiltzaileak', name: 'app_admin_Erabiltzaileak')]
+    public function Erabiltzaileak(Request $request, UserPasswordHasherInterface $passwordHasher): Response
+    {
+        // Crear una nueva instancia de Bilera
+        $user = new User();
+
+        // Crear el formulario asociado a la entidad
+        $form = $this->createForm(UserType::class, $user);
+
+        // Manejar la solicitud
+        $form->handleRequest($request);
+
+        if ($form->isSubmitted() && $form->isValid()) {
+            // Codificar la contraseña antes de guardarla
+            $plainTextPassword = $user->getPasahitza();
+            $hashedPassword = $passwordHasher->hashPassword($user, $plainTextPassword);
+            $user->setPasahitza($hashedPassword);
+
+            // Guardar los datos en la base de datos
+            $this->em->persist($user);
+            $this->em->flush();
+
+            // Mostrar mensaje de éxito y redirigir
+            $this->addFlash('success', 'Erabiltzailea behar bezala sortu da!');
+            return $this->redirectToRoute('app_admin_Erabiltzaileak');
+        }
+        $erabiltzaileak = $this->em->getRepository(User::class)->createQueryBuilder('b')
+            ->getQuery()
+            ->getResult();
+
+        // Renderizar el formulario
+        return $this->render('admin/Erabiltzaileak.html.twig', [
+            'form' => $form->createView(),
+            'users' => $erabiltzaileak,
+        ]);
+    }
+
+    #[Route('/Erabiltzaileak/delete/{id}', name: 'app_admin_Erabiltzaileak_delete', methods: ['POST'])]
+    public function deleteUser(Request $request, User $user, EntityManagerInterface $em): Response
+    {
+        if ($this->isCsrfTokenValid('delete' . $user->getId(), $request->request->get('_token'))) {
+            $em->remove($user);
+            $em->flush();
+
+            $this->addFlash('success', 'Erabiltzailea behar bezala ezabatu da.');
+        }
+
+        return $this->redirectToRoute('app_admin_Erabiltzaileak');
     }
 }
